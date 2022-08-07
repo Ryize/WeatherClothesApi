@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -119,6 +119,9 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Пример своего шаблона, подробнее в Api.views.get_default_clothes_template
 # CUSTOM_CLOTHES_TEMPLATE = {
 #     2: [[803, 804], '25', '35', 'Майка, шорты, сандали. На всякий случай возьмите кофту, на улице облачно)'],
 # }
+
+OPEN_WEATHER_MAP_APPID = os.environ.get('WEATHER_APPID')
