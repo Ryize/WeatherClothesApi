@@ -1,10 +1,13 @@
 import json
-import os
+import time
 
 import requests
 from django.conf import settings
 from rest_framework import views
 from rest_framework.response import Response
+
+APPID = settings.OPEN_WEATHER_MAP_APPID
+LANG = settings.LANGUAGE_CODE or 'ru'
 
 
 def get_default_clothes_template() -> dict:
@@ -69,9 +72,8 @@ class ClothesPlanView(views.APIView):
     """
 
     def get(self, request, location: str):
-        APPID = settings.OPEN_WEATHER_MAP_APPID
         response = requests.get("http://api.openweathermap.org/data/2.5/weather",
-                                params={'q': location, 'units': 'metric', 'lang': 'ru',
+                                params={'q': location, 'units': 'metric', 'lang': LANG,
                                         'APPID': APPID})
         data = json.loads(response.text)
         try:
@@ -234,3 +236,53 @@ class GetCitiesListView(views.APIView):
         with open('Api/static/current.city.list.json', 'r') as file:
             data = json.loads(file.read())
         return Response(data)
+
+
+class GetWeatherClothesTimeView(views.APIView):
+    """
+    Класс для получения рекомендации по одежде через указанный промежуток времени (не более 4'х дней!).
+    Обратите внимание, запрос принимает два обязательных параметра - географические координаты (широта, долгота).
+    Они должны быть разделены запятой БЕЗ пробела!
+
+    Запрос: curl /api/v1/get_through/-41.211128,174.908081/600
+    Ответ:
+    {
+        "clothes_plan": "Футболка, кофта, штаны. На улице мокро, и грязно белые кроссовки не вариант!",
+        "temp_now": 6.92,
+        "description": "дождь"
+    }
+    """
+
+    def get(self, request, location: str, _time: int):
+        location = location.split(',')
+        receive_time = time.time() + _time
+        response = requests.get(f'https://api.openweathermap.org/data/2.5/onecall',
+                                params={'lat': location[0], 'lon': location[1], 'units': 'metric', 'lang': LANG,
+                                        'exclude': 'daily,minutely,current,alerts',
+                                        'APPID': APPID})
+        response_data = response.json()
+        for forecast in response_data["hourly"]:
+            if forecast['dt'] >= receive_time:
+                conditions_id = forecast['weather'][0]['id']
+                description = forecast['weather'][0]['description']
+                temp_now = forecast['temp']
+                break
+        else:
+            result = {
+                'status': 404,
+                'description': 'Информация на данную дату не найдена!'
+            }
+            return Response(result)
+
+        for dress in get_clothes_plan().values():
+            if conditions_id in dress[0] and int(dress[1]) <= temp_now <= int(dress[2]):
+                clothes_plan = dress[3]
+                break
+        else:
+            clothes_plan = 'На улице непонятная жесть, рекомендуем вам остаться дома!'
+        result = {
+            'clothes_plan': clothes_plan,
+            'temp_now': temp_now,
+            'description': description.capitalize(),
+        }
+        return Response(result)
