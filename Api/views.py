@@ -1,4 +1,5 @@
 import json
+import os
 
 import requests
 from django.conf import settings
@@ -182,3 +183,54 @@ class GetAllWeatherPlanView(views.APIView):
                 'temp_max': dress[2],
             }
         return Response(all_plan)
+
+
+class GetCitiesListView(views.APIView):
+    """
+    Используется для получения списка городов и информации о них.
+    Название городов можно использоваться для получения рекомендации по одежде (api/v1/<НазваниеГорода>)
+
+    Пример ответа (для одного города, на самом деле их очень много):
+    [
+      {
+        "id": 14256,
+        "coord": {
+          "lon": 48.570728,
+          "lat": 34.790878
+        },
+        "country": "IR",
+        "geoname": {
+          "cl": "P",
+          "code": "PPL",
+          "parent": 132142
+        },
+        "langs": [
+          {
+            "de": "Azad Shahr"
+          },
+          {
+            "fa": "آزادشهر"
+          }
+        ],
+        "name": "Azadshahr",
+        "stat": {
+          "level": 1.0,
+          "population": 514102
+        },
+        "stations": [
+          {
+            "id": 7030,
+            "dist": 9,
+            "kf": 1
+          }
+        ],
+        "zoom": 10
+      },
+       ...
+    ]
+    """
+
+    def get(self, request):
+        with open('Api/static/current.city.list.json', 'r') as file:
+            data = json.loads(file.read())
+        return Response(data)
