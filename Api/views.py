@@ -6,6 +6,8 @@ from django.conf import settings
 from rest_framework import views
 from rest_framework.response import Response
 
+from Api.serializers import ClothesPlanSerializer, GetPlanWeatherIDSerializer, GetWeatherClothesTimeSerializer
+
 APPID = settings.OPEN_WEATHER_MAP_APPID
 LANG = settings.LANGUAGE_CODE or 'ru'
 
@@ -72,6 +74,10 @@ class ClothesPlanView(views.APIView):
     """
 
     def get(self, request, location: str):
+        _data = {'location': location}
+        if not ClothesPlanSerializer(data=_data).is_valid():
+            return Response({'status': '400', 'description': 'Данные переданы неверно!'}, status=400)
+
         response = requests.get("http://api.openweathermap.org/data/2.5/weather",
                                 params={'q': location, 'units': 'metric', 'lang': LANG,
                                         'APPID': APPID})
@@ -133,6 +139,9 @@ class GetPlanWeatherIDView(views.APIView):
     """
 
     def get(self, request, pk: int):
+        _data = {'pk': pk}
+        if not GetPlanWeatherIDSerializer(data=_data).is_valid():
+            return Response({'status': '400', 'description': 'Данные переданы неверно!'}, status=400)
         how_to_dress = get_clothes_plan()
         for dress in how_to_dress.values():
             if pk in dress[0]:
@@ -254,6 +263,9 @@ class GetWeatherClothesTimeView(views.APIView):
     """
 
     def get(self, request, location: str, _time: int):
+        _data = {'location': location, '_time': _time,}
+        if not GetWeatherClothesTimeSerializer(data=_data).is_valid():
+            return Response({'status': '400', 'description': 'Данные переданы неверно!'}, status=400)
         location = location.split(',')
         receive_time = time.time() + _time
         response = requests.get(f'https://api.openweathermap.org/data/2.5/onecall',
